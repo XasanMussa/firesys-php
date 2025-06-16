@@ -240,11 +240,32 @@ function updateDashboardAndLogs(data) {
     }
 }
 
+function updateNotifications(data) {
+    if (data.notifications) {
+        let notifHtml = '<h3>Notifications</h3>';
+        if (data.notifications.length > 0) {
+            data.notifications.forEach(note => {
+                notifHtml += `<div class="notif-card">` +
+                    `<span>${note.message}</span>` +
+                    `<a href=\"#\" class=\"delete-notification\" data-id=\"${note.id}\">✖</a>` +
+                    `</div>`;
+            });
+        } else {
+            notifHtml += '<p>No notifications available</p>';
+        }
+        const notifSidebar = document.getElementById('notifSidebar');
+        if (notifSidebar) {
+            notifSidebar.innerHTML = notifHtml;
+        }
+    }
+}
+
 function pollDataAndRefresh() {
     fetch('https://fire-backend-production.up.railway.app/sensor_notification.php?endpoint=fetch')
         .then(response => response.json())
         .then(data => {
             updateDashboardAndLogs(data);
+            updateNotifications(data);
             setTimeout(pollDataAndRefresh, 1000); // Poll again after 1 second
         })
         .catch(error => {
