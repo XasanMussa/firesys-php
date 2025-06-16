@@ -198,25 +198,46 @@ document.addEventListener('mousedown', function(event) {
 </script>
 
 <script>
-// 1-second polling to fetch data and refresh the page
+// 1-second polling to fetch data and update the UI without reloading
 function updateDashboardAndLogs(data) {
     // Update dashboard cards
     if (data.sensor_data && data.sensor_data.length > 0) {
-        const sensor = data.sensor_data[0];
+        const last = data.sensor_data[data.sensor_data.length - 1];
         const dashboardCards = document.querySelectorAll('.dashboard .card');
         if (dashboardCards.length >= 4) {
-            dashboardCards[0].querySelector('p:last-child').className = (sensor.fire_detected == 1 || sensor.fire_detected === "1") ? 'on' : 'off';
-            dashboardCards[0].querySelector('p:last-child').textContent = (sensor.fire_detected == 1 || sensor.fire_detected === "1") ? 'On' : 'Off';
-            dashboardCards[1].querySelector('p:last-child').className = (sensor.gas_detected == 1 || sensor.gas_detected === "1") ? 'on' : 'off';
-            dashboardCards[1].querySelector('p:last-child').textContent = (sensor.gas_detected == 1 || sensor.gas_detected === "1") ? 'On' : 'Off';
-            dashboardCards[2].querySelector('p:last-child').className = (sensor.emergency_triggered == 1 || sensor.emergency_triggered === "1") ? 'on' : 'off';
-            dashboardCards[2].querySelector('p:last-child').textContent = (sensor.emergency_triggered == 1 || sensor.emergency_triggered === "1") ? 'On' : 'Off';
-            dashboardCards[3].querySelector('p:last-child').className = (sensor.pump_status == 1 || sensor.pump_status === "1") ? 'on' : 'off';
-            dashboardCards[3].querySelector('p:last-child').textContent = (sensor.pump_status == 1 || sensor.pump_status === "1") ? 'On' : 'Off';
+            dashboardCards[0].querySelector('p:last-child').className = (last.fire_detected == 1 || last.fire_detected === "1") ? 'on' : 'off';
+            dashboardCards[0].querySelector('p:last-child').textContent = (last.fire_detected == 1 || last.fire_detected === "1") ? 'On' : 'Off';
+            dashboardCards[1].querySelector('p:last-child').className = (last.gas_detected == 1 || last.gas_detected === "1") ? 'on' : 'off';
+            dashboardCards[1].querySelector('p:last-child').textContent = (last.gas_detected == 1 || last.gas_detected === "1") ? 'On' : 'Off';
+            dashboardCards[2].querySelector('p:last-child').className = (last.emergency_triggered == 1 || last.emergency_triggered === "1") ? 'on' : 'off';
+            dashboardCards[2].querySelector('p:last-child').textContent = (last.emergency_triggered == 1 || last.emergency_triggered === "1") ? 'On' : 'Off';
+            dashboardCards[3].querySelector('p:last-child').className = (last.pump_status == 1 || last.pump_status === "1") ? 'on' : 'off';
+            dashboardCards[3].querySelector('p:last-child').textContent = (last.pump_status == 1 || last.pump_status === "1") ? 'On' : 'Off';
         }
     }
-    // Update logs table (if you want to update logs as well)
-    // Not implemented here, as logs are not returned by fetch endpoint
+
+    // Update logs table
+    if (data.sensor_data) {
+        let logHtml = '';
+        // Show newest first
+        const logs = [...data.sensor_data].reverse();
+        logs.forEach(log => {
+            logHtml += `<tr>
+                <td>${log.timestamp ? log.timestamp : 'null'}</td>
+                <td>${log.fire_detected == 1 || log.fire_detected === "1" ? "🔥 On" : "🔥 Off"}</td>
+                <td>${log.gas_detected == 1 || log.gas_detected === "1" ? "⛽ On" : "⛽ Off"}</td>
+                <td>${log.emergency_triggered == 1 || log.emergency_triggered === "1" ? "⚠️ On" : "⚠️ Off"}</td>
+                <td>${log.pump_status == 1 || log.pump_status === "1" ? "🌊 On" : "🌊 Off"}</td>
+            </tr>`;
+        });
+        if (!logHtml) {
+            logHtml = '<tr><td colspan="5">No logs available</td></tr>';
+        }
+        const logsTbody = document.querySelector('.table-section table tbody');
+        if (logsTbody) {
+            logsTbody.innerHTML = logHtml;
+        }
+    }
 }
 
 function pollDataAndRefresh() {
@@ -224,10 +245,7 @@ function pollDataAndRefresh() {
         .then(response => response.json())
         .then(data => {
             updateDashboardAndLogs(data);
-            // Refresh the page after polling (1 second delay)
-            setTimeout(function() {
-                location.reload();
-            }, 1000);
+            setTimeout(pollDataAndRefresh, 1000); // Poll again after 1 second
         })
         .catch(error => {
             console.error('Polling error:', error);
@@ -235,7 +253,6 @@ function pollDataAndRefresh() {
         });
 }
 
-// Start polling after DOM is loaded
 window.addEventListener('DOMContentLoaded', function() {
     pollDataAndRefresh();
 });

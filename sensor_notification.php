@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['endpoint']) && $_GET['en
     $notification_data = [];
 
     // Fetch latest sensor data
-    $sensorSql = "SELECT * FROM sensor_logs ORDER BY timestamp DESC LIMIT 1";
+    $sensorSql = "SELECT * FROM sensor_logs";
     $sensorResult = $conn->query($sensorSql);
     if ($sensorResult->num_rows > 0) {
         while ($row = $sensorResult->fetch_assoc()) {
