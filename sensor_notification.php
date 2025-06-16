@@ -37,13 +37,23 @@ function broadcast_sensor_data() {
         'sensor_data' => $sensor_data,
         'logs' => array_reverse($logs)
     ]);
-    error_log('Broadcasting sensor data: ' . $msg);
-    $fp = fsockopen("127.0.0.1", 8090, $errno, $errstr, 1);
+    
+    // Hardcoded WebSocket server details
+    $ws_host = 'fire-backend-production.up.railway.app';
+    $ws_port = 8090;
+    
+    error_log("Attempting to broadcast sensor data to WebSocket server at $ws_host:$ws_port");
+    
+    // Set a shorter timeout to avoid hanging
+    $timeout = 1;
+    $fp = @fsockopen($ws_host, $ws_port, $errno, $errstr, $timeout);
     if ($fp) {
         fwrite($fp, $msg . "\n");
         fclose($fp);
+        error_log("Successfully broadcast sensor data");
     } else {
-        error_log("Failed to connect to WebSocket push server: $errstr ($errno)");
+        error_log("Failed to connect to WebSocket server at $ws_host:$ws_port: $errstr ($errno)");
+        // Continue execution even if WebSocket fails - don't let it break the API
     }
     $conn->close();
 }
@@ -89,13 +99,23 @@ function broadcast_notifications() {
         'type' => 'notification_update',
         'notifications' => $notifications
     ]);
-    // Send to WebSocket server (direct socket on port 8090)
-    $fp = fsockopen("127.0.0.1", 8090, $errno, $errstr, 1);
+    
+    // Hardcoded WebSocket server details
+    $ws_host = 'fire-backend-production.up.railway.app';
+    $ws_port = 8090;
+    
+    error_log("Attempting to broadcast notifications to WebSocket server at $ws_host:$ws_port");
+    
+    // Set a shorter timeout to avoid hanging
+    $timeout = 1;
+    $fp = @fsockopen($ws_host, $ws_port, $errno, $errstr, $timeout);
     if ($fp) {
         fwrite($fp, $msg . "\n");
         fclose($fp);
+        error_log("Successfully broadcast notifications");
     } else {
-        error_log("Failed to connect to WebSocket push server: $errstr ($errno)");
+        error_log("Failed to connect to WebSocket server at $ws_host:$ws_port: $errstr ($errno)");
+        // Continue execution even if WebSocket fails - don't let it break the API
     }
 }
 
