@@ -40,7 +40,7 @@ function broadcast_sensor_data() {
     
     // Hardcoded WebSocket server details
     $ws_host = 'ws://fire-backend-production.up.railway.app';
-    $ws_port = 8090;
+    $ws_port = 8080;
     
     error_log("Attempting to broadcast sensor data to WebSocket server at $ws_host:$ws_port");
     
@@ -102,7 +102,7 @@ function broadcast_notifications() {
     
     // Hardcoded WebSocket server details
     $ws_host = 'fire-backend-production.up.railway.app';
-    $ws_port = 8090;
+    $ws_port = 8080;
     
     error_log("Attempting to broadcast notifications to WebSocket server at $ws_host:$ws_port");
     
