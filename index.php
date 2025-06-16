@@ -165,7 +165,7 @@ document.addEventListener('click', function(event) {
         event.preventDefault();
         const notificationId = event.target.dataset.id;
 
-        fetch(`sensor_notification.php?endpoint=delete_notification&id=${notificationId}`, {
+        fetch(`https://fire-backend-production.up.railway.app/sensor_notification.php?endpoint=delete_notification&id=${notificationId}`, {
             method: 'GET',
         })
         .then(response => response.json())
