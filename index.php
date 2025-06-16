@@ -198,76 +198,47 @@ document.addEventListener('mousedown', function(event) {
 </script>
 
 <script>
-// WebSocket client for real-time notifications
-// const ws = new WebSocket('ws://localhost:8080');
-const ws = new WebSocket('ws://<?php echo $_SERVER['HTTP_HOST']; ?>:8080');
-ws.onopen = function() {
-    console.log('WebSocket connection established');
-};
-ws.onmessage = function(event) {
-    console.log('WebSocket message received:', event.data); // Debug log
-    try {
-        const msg = JSON.parse(event.data);
-        console.log('Parsed WebSocket message:', msg); // Debug log
-        if (msg.type === 'notification_update') {
-            // Replace the notifications sidebar content
-            const notifSidebar = document.getElementById('notifSidebar');
-            let html = '<h3>Notifications</h3>';
-            if (msg.notifications && msg.notifications.length > 0) {
-                msg.notifications.forEach(note => {
-                    html += `<div class=\"notif-card\">` +
-                        `<span>${note.message}</span>` +
-                        `<a href=\"#\" class=\"delete-notification\" data-id=\"${note.id}\">✖</a>` +
-                        `</div>`;
-                });
-            } else {
-                html += '<p>No notifications available</p>';
-            }
-            notifSidebar.innerHTML = html;
-        } else if (msg.type === 'sensor_update') {
-            // Update dashboard cards
-            if (msg.sensor_data) {
-                const dashboardCards = document.querySelectorAll('.dashboard .card');
-                if (dashboardCards.length >= 4) {
-                    dashboardCards[0].querySelector('p:last-child').className = (msg.sensor_data.fire_detected == 1 || msg.sensor_data.fire_detected === "1") ? 'on' : 'off';
-                    dashboardCards[0].querySelector('p:last-child').textContent = (msg.sensor_data.fire_detected == 1 || msg.sensor_data.fire_detected === "1") ? 'On' : 'Off';
-                    dashboardCards[1].querySelector('p:last-child').className = (msg.sensor_data.gas_detected == 1 || msg.sensor_data.gas_detected === "1") ? 'on' : 'off';
-                    dashboardCards[1].querySelector('p:last-child').textContent = (msg.sensor_data.gas_detected == 1 || msg.sensor_data.gas_detected === "1") ? 'On' : 'Off';
-                    dashboardCards[2].querySelector('p:last-child').className = (msg.sensor_data.emergency_triggered == 1 || msg.sensor_data.emergency_triggered === "1") ? 'on' : 'off';
-                    dashboardCards[2].querySelector('p:last-child').textContent = (msg.sensor_data.emergency_triggered == 1 || msg.sensor_data.emergency_triggered === "1") ? 'On' : 'Off';
-                    dashboardCards[3].querySelector('p:last-child').className = (msg.sensor_data.pump_status == 1 || msg.sensor_data.pump_status === "1") ? 'on' : 'off';
-                    dashboardCards[3].querySelector('p:last-child').textContent = (msg.sensor_data.pump_status == 1 || msg.sensor_data.pump_status === "1") ? 'On' : 'Off';
-                }
-            }
-            // Update logs table
-            if (msg.logs) {
-                let logHtml = '';
-                msg.logs.forEach(log => {
-                    logHtml += `<tr>` +
-                        `<td>${log.timestamp}</td>` +
-                        `<td>${log.fire_detected ? '🔥 On' : '🔥 Off'}</td>` +
-                        `<td>${log.gas_detected ? '⛽ On' : '⛽ Off'}</td>` +
-                        `<td>${log.emergency_triggered ? '⚠️ On' : '⚠️ Off'}</td>` +
-                        `<td>${log.pump_status ? '🌊 On' : '🌊 Off'}</td>` +
-                        `</tr>`;
-                });
-                if (!logHtml) {
-                    logHtml = '<tr><td colspan="5">No logs available</td></tr>';
-                }
-                // Always update the <tbody> of the logs table
-                const logsTbody = document.querySelector('.table-section table tbody');
-                if (logsTbody) {
-                    logsTbody.innerHTML = logHtml;
-                }
-            }
+// 1-second polling to fetch data and refresh the page
+function updateDashboardAndLogs(data) {
+    // Update dashboard cards
+    if (data.sensor_data && data.sensor_data.length > 0) {
+        const sensor = data.sensor_data[0];
+        const dashboardCards = document.querySelectorAll('.dashboard .card');
+        if (dashboardCards.length >= 4) {
+            dashboardCards[0].querySelector('p:last-child').className = (sensor.fire_detected == 1 || sensor.fire_detected === "1") ? 'on' : 'off';
+            dashboardCards[0].querySelector('p:last-child').textContent = (sensor.fire_detected == 1 || sensor.fire_detected === "1") ? 'On' : 'Off';
+            dashboardCards[1].querySelector('p:last-child').className = (sensor.gas_detected == 1 || sensor.gas_detected === "1") ? 'on' : 'off';
+            dashboardCards[1].querySelector('p:last-child').textContent = (sensor.gas_detected == 1 || sensor.gas_detected === "1") ? 'On' : 'Off';
+            dashboardCards[2].querySelector('p:last-child').className = (sensor.emergency_triggered == 1 || sensor.emergency_triggered === "1") ? 'on' : 'off';
+            dashboardCards[2].querySelector('p:last-child').textContent = (sensor.emergency_triggered == 1 || sensor.emergency_triggered === "1") ? 'On' : 'Off';
+            dashboardCards[3].querySelector('p:last-child').className = (sensor.pump_status == 1 || sensor.pump_status === "1") ? 'on' : 'off';
+            dashboardCards[3].querySelector('p:last-child').textContent = (sensor.pump_status == 1 || sensor.pump_status === "1") ? 'On' : 'Off';
         }
-    } catch (e) {
-        console.error('WebSocket message error:', e);
     }
-};
-ws.onerror = function(error) {
-    console.error('WebSocket error:', error);
-};
+    // Update logs table (if you want to update logs as well)
+    // Not implemented here, as logs are not returned by fetch endpoint
+}
+
+function pollDataAndRefresh() {
+    fetch('https://fire-backend-production.up.railway.app/sensor_notification.php?endpoint=fetch')
+        .then(response => response.json())
+        .then(data => {
+            updateDashboardAndLogs(data);
+            // Refresh the page after polling (1 second delay)
+            setTimeout(function() {
+                location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            console.error('Polling error:', error);
+            setTimeout(pollDataAndRefresh, 1000); // Retry after 1 second
+        });
+}
+
+// Start polling after DOM is loaded
+window.addEventListener('DOMContentLoaded', function() {
+    pollDataAndRefresh();
+});
 </script>
 
 </body>
